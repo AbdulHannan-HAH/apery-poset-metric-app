@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Apery Set Graph Analyzer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <h1>Apery Set Graph Analyzer</h1>
+  <p class="intro">Explore the Apery set graph and metric dimension of numerical semigroups</p>
+
+  <div class="container">
+    <input type="text" id="generators" placeholder="Enter generators like 4,7 or 5,6,7" />
+    <button onclick="analyzeGraph()">Analyze</button>
+
+    <div id="output"></div>
+    <div id="graph"></div>
+    <div id="againBtn" style="margin-top: 20px; display: none; text-align:center;">
+      <button onclick="resetForm()">Analyze Again</button>
+    </div>
+  </div>
+
+  <div class="footer">Designed by <strong>Mehtab</strong></div>
+
+  <script>
+    async function analyzeGraph() {
+      const genInput = document.getElementById("generators").value;
+      const output = document.getElementById("output");
+      const graph = document.getElementById("graph");
+      const againBtn = document.getElementById("againBtn");
+      output.innerHTML = "Processing...";
+      graph.innerHTML = "";
+      againBtn.style.display = "none";
+
+      const gens = genInput.split(",").map(x => parseInt(x)).filter(n => !isNaN(n));
+      if (gens.length === 0) {
+        output.innerHTML = "<span style='color:red;'>Please enter valid integers.</span>";
+        return;
+      }
+
+      const response = await fetch("/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ generators: gens })
+      });
+
+      const data = await response.json();
+      if (data.error) {
+        output.innerHTML = `<span style="color:red;">Error: ${data.error}</span>`;
+        return;
+      }
+
+      let html = `<h3>Results for &lt;${gens.join(', ')}&gt;</h3>`;
+      html += `<p><strong>Minimal Generator:</strong> ${data.min_generator}</p>`;
+      html += `<p><strong>Apery Set:</strong> [${data.apery_set.join(', ')}]</p>`;
+      html += `<p><strong>No. of Nodes in Apery Set:</strong> ${data.num_nodes}</p>`;
+      html += `<p><strong>No. of Edges:</strong> ${data.num_edges}</p>`;
+      html += `<p><strong>Metric Dimension:</strong> ${data.metric_dimension}</p>`;
+      html += `<p><strong>Resolving Set:</strong> [${data.resolving_set.join(', ')}]</p>`;
+
+      if (data.sample_edges.length > 0) {
+        html += "<p><strong>Sample Edges:</strong><ul>";
+        data.sample_edges.forEach(e => {
+          html += `<li>|${e[0]} - ${e[1]}| = ${e[2]}</li>`;
+        });
+        html += "</ul></p>";
+      }
+
+      output.innerHTML = html;
+
+      const imgRes = await fetch("/plot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ generators: gens })
+      });
+
+      const blob = await imgRes.blob();
+      const imgURL = URL.createObjectURL(blob);
+
+      graph.innerHTML = `<img src="${imgURL}" alt="Apery Graph Image" />`;
+      againBtn.style.display = "block";
+    }
+
+    function resetForm() {
+      document.getElementById("generators").value = "";
+      document.getElementById("output").innerHTML = "";
+      document.getElementById("graph").innerHTML = "";
+      document.getElementById("againBtn").style.display = "none";
+      document.getElementById("generators").focus();
+    }
+  </script>
+
+  <!-- Chatbot Toggle Button -->
+  <div id="chat-toggle" onclick="toggleChatbot()">💬</div>
+
+  <!-- Chatbot Box -->
+  <div id="chatbot-box">
+    <div class="chatbot-header">
+      <strong>Ask Bot</strong>
+      <span onclick="toggleChatbot()" style="cursor: pointer; float: right;">✖</span>
+    </div>
+    <div id="chatWindow" class="chatbot-body"></div>
+    <input type="text" id="chatInput" placeholder="Type your question..." class="chatbot-input">
+  </div>
+
+  <script>
+    function toggleChatbot() {
+      const bot = document.getElementById("chatbot-box");
+      bot.style.display = bot.style.display === "flex" ? "none" : "flex";
+    }
+
+    document.getElementById("chatInput").addEventListener("keypress", async function (e) {
+      if (e.key === "Enter") {
+        const input = this.value.trim();
+        if (input === "") return;
+        const chatWindow = document.getElementById("chatWindow");
+        chatWindow.innerHTML += `<div><strong>You:</strong> ${input}</div>`;
+        this.value = "";
+
+        const res = await fetch("/chatbot", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: input })
+        });
+
+        const data = await res.json();
+        chatWindow.innerHTML += `<div><strong>Bot:</strong> ${data.response}</div>`;
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+      }
+    });
+  </script>
+</body>
+</html>
