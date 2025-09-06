@@ -77,6 +77,7 @@ def get_layout(G, nodes):
 def index():
     return render_template("index.html")
 
+# app.py - update the analyze function
 @app.route("/analyze", methods=["POST"])
 def analyze():
     data = request.get_json()
@@ -100,13 +101,12 @@ def analyze():
             "num_edges": len(edges),
             "metric_dimension": md_value,
             "resolving_set": sorted(md_set),
-            "sample_edges": edges[:5],
+            "edges": edges,  # Include all edges, not just sample
         }
 
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)})
-
 @app.route("/plot", methods=["POST"])
 def plot_graph():
     data = request.get_json()

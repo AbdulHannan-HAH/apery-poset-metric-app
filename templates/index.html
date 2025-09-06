@@ -57,12 +57,13 @@
       html += `<p><strong>Apery Set:</strong> [${data.apery_set.join(', ')}]</p>`;
       html += `<p><strong>No. of Nodes in Apery Set:</strong> ${data.num_nodes}</p>`;
       html += `<p><strong>No. of Edges:</strong> ${data.num_edges}</p>`;
+      html += `<p><strong>Metric Dimension:</strong> ${data.metric_dimension}</p>`;
+      html += `<p><strong>Resolving Set:</strong> [${data.resolving_set.join(', ')}]</p>`;
       
-
-      if (data.sample_edges.length > 0) {
-        html += "<p><strong>Sample Edges:</strong><ul>";
-        data.sample_edges.forEach(e => {
-          html += `<li>|${e[0]} - ${e[1]}| = ${e[2]}</li>`;
+      if (data.edges.length > 0) {
+        html += "<p><strong>Edge Connections:</strong><ul>";
+        data.edges.forEach(e => {
+          html += `<li>|${e[0]} - ${e[1]}| = ${e[2]} ∈ S</li>`;
         });
         html += "</ul></p>";
       }
